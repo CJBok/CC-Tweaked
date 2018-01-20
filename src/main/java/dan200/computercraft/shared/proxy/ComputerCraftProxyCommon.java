@@ -35,10 +35,7 @@ import dan200.computercraft.shared.peripheral.commandblock.CommandBlockPeriphera
 import dan200.computercraft.shared.peripheral.common.*;
 import dan200.computercraft.shared.peripheral.diskdrive.ContainerDiskDrive;
 import dan200.computercraft.shared.peripheral.diskdrive.TileDiskDrive;
-import dan200.computercraft.shared.peripheral.modem.BlockAdvancedModem;
-import dan200.computercraft.shared.peripheral.modem.TileAdvancedModem;
-import dan200.computercraft.shared.peripheral.modem.TileCable;
-import dan200.computercraft.shared.peripheral.modem.TileWirelessModem;
+import dan200.computercraft.shared.peripheral.modem.*;
 import dan200.computercraft.shared.peripheral.monitor.TileMonitor;
 import dan200.computercraft.shared.peripheral.printer.ContainerPrinter;
 import dan200.computercraft.shared.peripheral.printer.TilePrinter;
@@ -52,6 +49,7 @@ import dan200.computercraft.shared.pocket.recipes.PocketComputerUpgradeRecipe;
 import dan200.computercraft.shared.turtle.blocks.TileTurtle;
 import dan200.computercraft.shared.turtle.inventory.ContainerTurtle;
 import dan200.computercraft.shared.util.*;
+import dan200.computercraft.shared.wired.DefaultWiredProvider;
 import net.minecraft.block.Block;
 import net.minecraft.creativetab.CreativeTabs;
 import net.minecraft.entity.player.EntityPlayer;
@@ -482,6 +480,9 @@ public abstract class ComputerCraftProxyCommon implements IComputerCraftProxy
 
         // Register media providers
         ComputerCraftAPI.registerMediaProvider( new DefaultMediaProvider() );
+
+        // Register network providers
+        ComputerCraftAPI.registerWiredProvider( new DefaultWiredProvider() );
     }
 
     private void registerForgeHandlers()

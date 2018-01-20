@@ -1,16 +1,25 @@
 package dan200.computercraft.shared.wired;
 
+import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-import dan200.computercraft.api.network.wired.AbstractWiredElement;
+import dan200.computercraft.api.lua.ILuaContext;
+import dan200.computercraft.api.lua.LuaException;
+import dan200.computercraft.api.network.wired.INetworkChange;
+import dan200.computercraft.api.network.wired.IWiredElement;
 import dan200.computercraft.api.network.wired.IWiredNetwork;
 import dan200.computercraft.api.network.wired.IWiredNode;
+import dan200.computercraft.api.peripheral.IComputerAccess;
+import dan200.computercraft.api.peripheral.IPeripheral;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+import java.util.Map;
 import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
@@ -29,9 +38,9 @@ public class NetworkTest
             cE = new NetworkElement( null, null, "c" );
 
         IWiredNode
-            aN = WiredNode.create( aE ),
-            bN = WiredNode.create( bE ),
-            cN = WiredNode.create( cE );
+            aN = aE.getNode(),
+            bN = bE.getNode(),
+            cN = cE.getNode();
 
         assertNotEquals( "A's and B's network must be different", aN.getNetwork(), bN.getNetwork() );
         assertNotEquals( "A's and C's network must be different", aN.getNetwork(), cN.getNetwork() );
@@ -41,17 +50,24 @@ public class NetworkTest
         assertFalse( "Cannot add connection twice", aN.getNetwork().connect( aN, bN ) );
 
         assertEquals( "A's and B's network must be equal", aN.getNetwork(), bN.getNetwork() );
-        assertEquals( "A's network should contain A and B", Sets.newHashSet( aN, bN ), nodes( aN.getNetwork() ) );
+        assertEquals( "A's network should be A and B", Sets.newHashSet( aN, bN ), nodes( aN.getNetwork() ) );
+
+        assertEquals( "A's peripheral set should be A, B", Sets.newHashSet( "a", "b" ), aE.allPeripherals().keySet() );
+        assertEquals( "B's peripheral set should be A, B", Sets.newHashSet( "a", "b" ), bE.allPeripherals().keySet() );
 
         aN.getNetwork().connect( aN, cN );
 
         assertEquals( "A's and B's network must be equal", aN.getNetwork(), bN.getNetwork() );
         assertEquals( "A's and C's network must be equal", aN.getNetwork(), cN.getNetwork() );
-        assertEquals( "A's network should contain A, B and C", Sets.newHashSet( aN, bN, cN ), nodes( aN.getNetwork() ) );
+        assertEquals( "A's network should be A, B and C", Sets.newHashSet( aN, bN, cN ), nodes( aN.getNetwork() ) );
 
-        assertEquals( "A's neighbour set should be B, C", Sets.newHashSet( bN, cN ), neighbours( aN.getNetwork(), aN ) );
-        assertEquals( "B's neighbour set should be A", Sets.newHashSet( aN ), neighbours( aN.getNetwork(), bN ) );
-        assertEquals( "C's neighbour set should be A", Sets.newHashSet( aN ), neighbours( aN.getNetwork(), cN ) );
+        assertEquals( "A's neighbour set should be B, C", Sets.newHashSet( bN, cN ), neighbours( aN ) );
+        assertEquals( "B's neighbour set should be A", Sets.newHashSet( aN ), neighbours( bN ) );
+        assertEquals( "C's neighbour set should be A", Sets.newHashSet( aN ), neighbours( cN ) );
+
+        assertEquals( "A's peripheral set should be A, B, C", Sets.newHashSet( "a", "b", "c" ), aE.allPeripherals().keySet() );
+        assertEquals( "B's peripheral set should be A, B, C", Sets.newHashSet( "a", "b", "c" ), bE.allPeripherals().keySet() );
+        assertEquals( "C's peripheral set should be A, B, C", Sets.newHashSet( "a", "b", "c" ), cE.allPeripherals().keySet() );
     }
 
     @Test
@@ -63,9 +79,9 @@ public class NetworkTest
             cE = new NetworkElement( null, null, "c" );
 
         IWiredNode
-            aN = WiredNode.create( aE ),
-            bN = WiredNode.create( bE ),
-            cN = WiredNode.create( cE );
+            aN = aE.getNode(),
+            bN = bE.getNode(),
+            cN = cE.getNode();
 
         aN.getNetwork().connect( aN, bN );
         aN.getNetwork().connect( aN, cN );
@@ -75,7 +91,11 @@ public class NetworkTest
 
         assertEquals( "A's and B's network must be equal", aN.getNetwork(), bN.getNetwork() );
         assertEquals( "A's and C's network must be equal", aN.getNetwork(), cN.getNetwork() );
-        assertEquals( "A's network should contain A, B and C", Sets.newHashSet( aN, bN, cN ), nodes( aN.getNetwork() ) );
+        assertEquals( "A's network should be A, B and C", Sets.newHashSet( aN, bN, cN ), nodes( aN.getNetwork() ) );
+
+        assertEquals( "A's peripheral set should be A, B, C", Sets.newHashSet( "a", "b", "c" ), aE.allPeripherals().keySet() );
+        assertEquals( "B's peripheral set should be A, B, C", Sets.newHashSet( "a", "b", "c" ), bE.allPeripherals().keySet() );
+        assertEquals( "C's peripheral set should be A, B, C", Sets.newHashSet( "a", "b", "c" ), cE.allPeripherals().keySet() );
     }
 
     @Test
@@ -87,9 +107,9 @@ public class NetworkTest
             cE = new NetworkElement( null, null, "c" );
 
         IWiredNode
-            aN = WiredNode.create( aE ),
-            bN = WiredNode.create( bE ),
-            cN = WiredNode.create( cE );
+            aN = aE.getNode(),
+            bN = bE.getNode(),
+            cN = cE.getNode();
 
         aN.getNetwork().connect( aN, bN );
         aN.getNetwork().connect( aN, cN );
@@ -98,8 +118,12 @@ public class NetworkTest
 
         assertNotEquals( "A's and B's network must not be equal", aN.getNetwork(), bN.getNetwork() );
         assertEquals( "A's and C's network must be equal", aN.getNetwork(), cN.getNetwork() );
-        assertEquals( "A's network should contain A and C", Sets.newHashSet( aN, cN ), nodes( aN.getNetwork() ) );
-        assertEquals( "B's network should contain B", Sets.newHashSet( bN ), nodes( bN.getNetwork() ) );
+        assertEquals( "A's network should be A and C", Sets.newHashSet( aN, cN ), nodes( aN.getNetwork() ) );
+        assertEquals( "B's network should be B", Sets.newHashSet( bN ), nodes( bN.getNetwork() ) );
+
+        assertEquals( "A's peripheral set should be A, C", Sets.newHashSet( "a", "c" ), aE.allPeripherals().keySet() );
+        assertEquals( "B's peripheral set should be B", Sets.newHashSet( "b" ), bE.allPeripherals().keySet() );
+        assertEquals( "C's peripheral set should be A, C", Sets.newHashSet( "a", "c" ), cE.allPeripherals().keySet() );
     }
 
     @Test
@@ -112,10 +136,10 @@ public class NetworkTest
             bbE = new NetworkElement( null, null, "b_" );
 
         IWiredNode
-            aN = WiredNode.create( aE ),
-            aaN = WiredNode.create( aaE ),
-            bN = WiredNode.create( bE ),
-            bbN = WiredNode.create( bbE );
+            aN = aE.getNode(),
+            aaN = aaE.getNode(),
+            bN = bE.getNode(),
+            bbN = bbE.getNode();
 
         aN.getNetwork().connect( aN, aaN );
         bN.getNetwork().connect( bN, bbN );
@@ -128,8 +152,11 @@ public class NetworkTest
         assertEquals( "A's and A_'s network must be equal", aN.getNetwork(), aaN.getNetwork() );
         assertEquals( "B's and B_'s network must be equal", bN.getNetwork(), bbN.getNetwork() );
 
-        assertEquals( "A's network should contain A and A_", Sets.newHashSet( aN, aaN ), nodes( aN.getNetwork() ) );
-        assertEquals( "B's network should contain B and B_", Sets.newHashSet( bN, bbN ), nodes( bN.getNetwork() ) );
+        assertEquals( "A's network should be A and A_", Sets.newHashSet( aN, aaN ), nodes( aN.getNetwork() ) );
+        assertEquals( "B's network should be B and B_", Sets.newHashSet( bN, bbN ), nodes( bN.getNetwork() ) );
+
+        assertEquals( "A's peripheral set should be A and A_", Sets.newHashSet( "a", "a_" ), aE.allPeripherals().keySet() );
+        assertEquals( "B's peripheral set should be B and B_", Sets.newHashSet( "b", "b_" ), bE.allPeripherals().keySet() );
     }
 
     @Test
@@ -141,9 +168,9 @@ public class NetworkTest
             cE = new NetworkElement( null, null, "c" );
 
         IWiredNode
-            aN = WiredNode.create( aE ),
-            bN = WiredNode.create( bE ),
-            cN = WiredNode.create( cE );
+            aN = aE.getNode(),
+            bN = bE.getNode(),
+            cN = cE.getNode();
 
         aN.getNetwork().connect( aN, bN );
         aN.getNetwork().connect( aN, cN );
@@ -154,8 +181,12 @@ public class NetworkTest
         assertNotEquals( "A's and B's network must not be equal", aN.getNetwork(), bN.getNetwork() );
         assertEquals( "A's and C's network must be equal", aN.getNetwork(), cN.getNetwork() );
 
-        assertEquals( "A's network should contain A and C", Sets.newHashSet( aN, cN ), nodes( aN.getNetwork() ) );
-        assertEquals( "B's network should contain B", Sets.newHashSet( bN ), nodes( bN.getNetwork() ) );
+        assertEquals( "A's network should be A and C", Sets.newHashSet( aN, cN ), nodes( aN.getNetwork() ) );
+        assertEquals( "B's network should be B", Sets.newHashSet( bN ), nodes( bN.getNetwork() ) );
+
+        assertEquals( "A's peripheral set should be A, C", Sets.newHashSet( "a", "c" ), aE.allPeripherals().keySet() );
+        assertEquals( "B's peripheral set should be B", Sets.newHashSet( "b" ), bE.allPeripherals().keySet() );
+        assertEquals( "C's peripheral set should be A, C", Sets.newHashSet( "a", "c" ), cE.allPeripherals().keySet() );
     }
 
     @Test
@@ -169,11 +200,11 @@ public class NetworkTest
             cE = new NetworkElement( null, null, "c" );
 
         IWiredNode
-            aN = WiredNode.create( aE ),
-            aaN = WiredNode.create( aaE ),
-            bN = WiredNode.create( bE ),
-            bbN = WiredNode.create( bbE ),
-            cN = WiredNode.create( cE );
+            aN = aE.getNode(),
+            aaN = aaE.getNode(),
+            bN = bE.getNode(),
+            bbN = bbE.getNode(),
+            cN = cE.getNode();
 
         aN.getNetwork().connect( aN, aaN );
         bN.getNetwork().connect( bN, bbN );
@@ -187,19 +218,25 @@ public class NetworkTest
         assertEquals( "A's and A_'s network must be equal", aN.getNetwork(), aaN.getNetwork() );
         assertEquals( "B's and B_'s network must be equal", bN.getNetwork(), bbN.getNetwork() );
 
-        assertEquals( "A's network should contain A and A_", Sets.newHashSet( aN, aaN ), nodes( aN.getNetwork() ) );
-        assertEquals( "B's network should contain B and B_", Sets.newHashSet( bN, bbN ), nodes( bN.getNetwork() ) );
+        assertEquals( "A's network should be A and A_", Sets.newHashSet( aN, aaN ), nodes( aN.getNetwork() ) );
+        assertEquals( "B's network should be B and B_", Sets.newHashSet( bN, bbN ), nodes( bN.getNetwork() ) );
+        assertEquals( "C's network should be C", Sets.newHashSet( cN ), nodes( cN.getNetwork() ) );
+
+        assertEquals( "A's peripheral set should be A and A_", Sets.newHashSet( "a", "a_" ), aE.allPeripherals().keySet() );
+        assertEquals( "B's peripheral set should be B and B_", Sets.newHashSet( "b", "b_" ), bE.allPeripherals().keySet() );
+        assertEquals( "C's peripheral set should be C", Sets.newHashSet( "c" ), cE.allPeripherals().keySet() );
     }
 
     @Test
-    public void testLarge() throws InterruptedException
+    @Ignore("Takes a long time to run, mostly for stress testing")
+    public void testLarge()
     {
         final int BRUTE_SIZE = 64;
         final int TOGGLE_CONNECTION_TIMES = 5;
         final int TOGGLE_NODE_TIMES = 5;
 
         Grid<IWiredNode> grid = new Grid<>( BRUTE_SIZE );
-        grid.map( ( existing, pos ) -> WiredNode.create( new NetworkElement( null, null, "n_" + pos ) ) );
+        grid.map( ( existing, pos ) -> new NetworkElement( null, null, "n_" + pos ).getNode() );
 
         // Test connecting
         {
@@ -243,7 +280,7 @@ public class NetworkTest
         {
             IWiredNode left = grid.get( new BlockPos( BRUTE_SIZE / 2, 0, 0 ) );
             IWiredNode right = grid.get( new BlockPos( BRUTE_SIZE / 2 + 1, 0, 0 ) );
-            IWiredNode centre = WiredNode.create( new NetworkElement( null, null, "c" ) );
+            IWiredNode centre = new NetworkElement( null, null, "c" ).getNode();
             assertNotEquals( left.getNetwork(), right.getNetwork() );
 
             long start = System.nanoTime();
@@ -261,17 +298,22 @@ public class NetworkTest
         }
     }
 
-    private class NetworkElement extends AbstractWiredElement
+    private static class NetworkElement implements IWiredElement
     {
         private final World world;
         private final Vec3d position;
         private final String id;
+        private final IWiredNode node;
+        private final Map<String, IPeripheral> localPeripherals = Maps.newHashMap();
+        private final Map<String, IPeripheral> remotePeripherals = Maps.newHashMap();
 
         private NetworkElement( World world, Vec3d position, String id )
         {
             this.world = world;
             this.position = position;
             this.id = id;
+            this.node = new WiredNode( this );
+            this.addPeripheral( id );
         }
 
         @Nonnull
@@ -300,9 +342,73 @@ public class NetworkTest
         {
             return "NetworkElement{" + id + "}";
         }
+
+        @Nonnull
+        @Override
+        public IWiredNode getNode()
+        {
+            return node;
+        }
+
+        @Override
+        public void networkChanged( @Nonnull INetworkChange change )
+        {
+            remotePeripherals.keySet().removeAll( change.peripheralsRemoved().keySet() );
+            remotePeripherals.putAll( change.peripheralsAdded() );
+        }
+
+        @Nonnull
+        @Override
+        public Map<String, IPeripheral> getPeripherals()
+        {
+            return localPeripherals;
+        }
+
+        public NetworkElement addPeripheral( String name )
+        {
+            localPeripherals.put( name, new NetworkPeripheral() );
+            getNode().invalidate();
+            return this;
+        }
+
+        @Nonnull
+        public Map<String, IPeripheral> allPeripherals()
+        {
+            return remotePeripherals;
+        }
     }
 
-    private class Grid<T>
+    private static class NetworkPeripheral implements IPeripheral
+    {
+        @Nonnull
+        @Override
+        public String getType()
+        {
+            return "test";
+        }
+
+        @Nonnull
+        @Override
+        public String[] getMethodNames()
+        {
+            return new String[0];
+        }
+
+        @Nullable
+        @Override
+        public Object[] callMethod( @Nonnull IComputerAccess computer, @Nonnull ILuaContext context, int method, @Nonnull Object[] arguments ) throws LuaException, InterruptedException
+        {
+            return new Object[0];
+        }
+
+        @Override
+        public boolean equals( @Nullable IPeripheral other )
+        {
+            return this == other;
+        }
+    }
+
+    private static class Grid<T>
     {
         private final int size;
         private final T[] box;
@@ -368,11 +474,11 @@ public class NetworkTest
 
     private static Set<WiredNode> nodes( IWiredNetwork network )
     {
-        return ((WiredNetwork) network).graph.nodes();
+        return ((WiredNetwork) network).getNodes();
     }
 
-    private static Set<WiredNode> neighbours( IWiredNetwork network, IWiredNode node )
+    private static Set<WiredNode> neighbours( IWiredNode node )
     {
-        return ((WiredNetwork) network).graph.successors( node );
+        return ((WiredNode) node).getNeighbours();
     }
 }
