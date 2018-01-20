@@ -4,9 +4,9 @@ import javax.annotation.Nonnull;
 
 public interface IWiredNetwork
 {
-    boolean connect( IWiredNode left, IWiredNode right );
+    boolean connect( @Nonnull IWiredNode left, @Nonnull IWiredNode right );
 
-    boolean disconnect( IWiredNode left, IWiredNode right );
+    boolean disconnect( @Nonnull IWiredNode left, @Nonnull IWiredNode right );
 
-    boolean remove( IWiredNode node );
+    boolean remove( @Nonnull IWiredNode node );
 }
