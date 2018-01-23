@@ -9,7 +9,6 @@ package dan200.computercraft.shared.peripheral.modem;
 import com.google.common.base.Objects;
 import dan200.computercraft.ComputerCraft;
 import dan200.computercraft.api.network.wired.IWiredElement;
-import dan200.computercraft.api.network.wired.IWiredNode;
 import dan200.computercraft.api.peripheral.IPeripheral;
 import dan200.computercraft.shared.common.BlockGeneric;
 import dan200.computercraft.shared.peripheral.PeripheralType;
@@ -32,9 +31,11 @@ import net.minecraft.world.World;
 
 import javax.annotation.Nonnull;
 import java.io.File;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
-public class TileCable extends TileModemBase implements IWiredElementTile
+public class TileCable extends TileWiredBase implements IWiredElementTile
 {
     public static final double MIN = 0.375;
     public static final double MAX = 1 - MIN;
@@ -348,20 +349,20 @@ public class TileCable extends TileModemBase implements IWiredElementTile
         return nbttagcompound;
     }
 
+    @Nonnull
     @Override
-    protected ModemPeripheral createPeripheral()
+    public Map<String, IPeripheral> getPeripherals()
     {
-        return new WiredModemPeripheral( this );
+        IPeripheral peripheral = getConnectedPeripheral();
+        return peripheral != null
+            ? Collections.singletonMap( getConnectedPeripheralName(), peripheral )
+            : Collections.emptyMap();
     }
 
-    protected WiredModemPeripheral getModem()
+    @Override
+    public boolean exclude( String name )
     {
-        return (WiredModemPeripheral) m_modem;
-    }
-
-    private IWiredNode getNode()
-    {
-        return getModem().getNode();
+        return name.equals( getConnectedPeripheralName() );
     }
 
     @Override
@@ -389,6 +390,7 @@ public class TileCable extends TileModemBase implements IWiredElementTile
             if( !m_connectionsFormed )
             {
                 networkChanged();
+                if( m_peripheralAccessAllowed ) getNode().invalidate();
                 m_connectionsFormed = true;
             }
         }
@@ -465,7 +467,7 @@ public class TileCable extends TileModemBase implements IWiredElementTile
         getNode().invalidate();
     }
 
-    String getConnectedPeripheralName()
+    private String getConnectedPeripheralName()
     {
         IPeripheral periph = getConnectedPeripheral();
         if( periph != null )
@@ -483,7 +485,7 @@ public class TileCable extends TileModemBase implements IWiredElementTile
         return null;
     }
 
-    IPeripheral getConnectedPeripheral()
+    private IPeripheral getConnectedPeripheral()
     {
         if( m_peripheralAccessAllowed )
         {
@@ -491,7 +493,8 @@ public class TileCable extends TileModemBase implements IWiredElementTile
             {
                 EnumFacing facing = getDirection();
                 BlockPos neighbour = getPos().offset( facing );
-                return PeripheralUtil.getPeripheral( getWorld(), neighbour, facing.getOpposite() );
+                IPeripheral peripheral = PeripheralUtil.getPeripheral( getWorld(), neighbour, facing.getOpposite() );
+                return peripheral == null || peripheral instanceof WiredModemPeripheral ? null : peripheral;
             }
         }
         return null;

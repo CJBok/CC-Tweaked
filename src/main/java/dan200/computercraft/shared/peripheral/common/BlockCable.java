@@ -48,15 +48,6 @@ public class BlockCable extends BlockPeripheralBase
         public static final PropertyBool WEST = PropertyBool.create( "west" );
         public static final PropertyBool UP = PropertyBool.create( "up" );
         public static final PropertyBool DOWN = PropertyBool.create( "down" );
-
-        private static final PropertyBool[] facings = new PropertyBool[]{
-            DOWN, UP, NORTH, SOUTH, WEST, EAST
-        };
-
-        public static PropertyBool forDirection( EnumFacing direction )
-        {
-            return facings[direction.ordinal()];
-        }
     }
 
     // Members

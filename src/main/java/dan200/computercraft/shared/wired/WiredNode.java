@@ -124,19 +124,6 @@ public final class WiredNode implements IWiredNode
         return network;
     }
 
-    @Override
-    public void invalidate()
-    {
-        Map<String, IPeripheral> oldPeripherals = peripherals;
-        Map<String, IPeripheral> newPeripherals = element.getPeripherals();
-
-        if( !oldPeripherals.equals( newPeripherals ) )
-        {
-            peripherals = newPeripherals;
-            network.updatePeripheralsFor( this, oldPeripherals, newPeripherals );
-        }
-    }
-
     public Set<WiredNode> getNeighbours()
     {
         acquireReadLock();

@@ -264,6 +264,45 @@ public final class WiredNetwork implements IWiredNetwork
         }
     }
 
+    @Override
+    public void invalidate( @Nonnull IWiredNode node )
+    {
+        WiredNode wired = checkNode( node );
+
+        lock.writeLock().lock();
+        try
+        {
+            if( wired.network != this ) throw new IllegalStateException( "Node is not on this network" );
+
+            Map<String, IPeripheral> oldPeripherals = wired.peripherals;
+            Map<String, IPeripheral> newPeripherals = wired.element.getPeripherals();
+            NetworkChange change = NetworkChange.changeOf( oldPeripherals, newPeripherals );
+            if( change.isEmpty() ) return;
+
+            wired.peripherals = newPeripherals;
+
+            // Detach the old peripherals then remove them.
+            for( IPeripheral peripheral : change.peripheralsRemoved().values() )
+            {
+                peripheral.detach( node );
+            }
+            peripherals.keySet().removeAll( change.peripheralsRemoved().keySet() );
+
+            // Add the new peripherals and attach them
+            peripherals.putAll( change.peripheralsAdded() );
+            for( IPeripheral peripheral : change.peripheralsAdded().values() )
+            {
+                peripheral.attach( node );
+            }
+
+            change.broadcast( nodes );
+        }
+        finally
+        {
+            lock.writeLock().unlock();
+        }
+    }
+
     void transmitPacket( WiredNode start, Packet packet, double range, boolean interdimensional )
     {
         Map<WiredNode, TransmitPoint> points = new HashMap<>();
@@ -318,27 +357,6 @@ public final class WiredNetwork implements IWiredNetwork
         for( TransmitPoint point : points.values() )
         {
             point.node.tryTransmit( packet, point.distance, point.interdimensional, range, interdimensional );
-        }
-    }
-
-    void updatePeripheralsFor( WiredNode node, Map<String, IPeripheral> removed, Map<String, IPeripheral> added )
-    {
-        lock.writeLock().lock();
-        try
-        {
-            if( node.network != this )
-            {
-                throw new IllegalStateException( node + "'s network has changed whilst calling .invalidate()" );
-            }
-
-            peripherals.keySet().removeAll( removed.keySet() );
-            peripherals.putAll( added );
-
-            NetworkChange.changeOf( removed, added ).broadcast( nodes );
-        }
-        finally
-        {
-            lock.writeLock().unlock();
         }
     }
 

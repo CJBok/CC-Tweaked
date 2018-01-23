@@ -76,14 +76,24 @@ public class NetworkChange implements INetworkChange
     {
         return removed;
     }
+    
+    public boolean isEmpty() {
+        return added.isEmpty() && removed.isEmpty();
+    }
 
     void broadcast( Iterable<WiredNode> nodes )
     {
-        for( WiredNode node : nodes ) node.element.networkChanged( this );
+        if(!isEmpty())
+        {
+            for( WiredNode node : nodes ) node.element.networkChanged( this );
+        }
     }
 
     void broadcast( WiredNode node )
     {
-        node.element.networkChanged( this );
+        if( !isEmpty() )
+        {
+            node.element.networkChanged( this );
+        }
     }
 }

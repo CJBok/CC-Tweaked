@@ -9,4 +9,6 @@ public interface IWiredNetwork
     boolean disconnect( @Nonnull IWiredNode left, @Nonnull IWiredNode right );
 
     boolean remove( @Nonnull IWiredNode node );
+
+    void invalidate( @Nonnull IWiredNode node );
 }

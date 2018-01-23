@@ -8,6 +8,7 @@ package dan200.computercraft.api.peripheral;
 
 import dan200.computercraft.api.lua.ILuaContext;
 import dan200.computercraft.api.lua.LuaException;
+import dan200.computercraft.api.network.wired.IWiredNode;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -112,6 +113,20 @@ public interface IPeripheral
      */
     default void detach( @Nonnull IComputerAccess computer )
     {
+    }
+
+    default void attach( @Nonnull IWiredNode node )
+    {
+    }
+
+    default void detach( @Nonnull IWiredNode node )
+    {
+    }
+
+    @Nonnull
+    default Object getTarget()
+    {
+        return this;
     }
 
     /**

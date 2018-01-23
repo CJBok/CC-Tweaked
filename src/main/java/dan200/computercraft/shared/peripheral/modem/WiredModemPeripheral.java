@@ -17,7 +17,6 @@ import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
 
 import javax.annotation.Nonnull;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -25,13 +24,13 @@ import static dan200.computercraft.core.apis.ArgumentHelper.getString;
 
 public class WiredModemPeripheral extends ModemPeripheral implements IWiredElement
 {
-    private final TileCable m_entity;
+    private final TileWiredBase m_entity;
     private final IWiredNode m_node;
 
     private final Map<String, IPeripheral> m_peripheralsByName = new HashMap<>();
     private final Map<String, RemotePeripheralWrapper> m_peripheralWrappersByName = new HashMap<>();
 
-    public WiredModemPeripheral( TileCable entity )
+    public WiredModemPeripheral( TileWiredBase entity )
     {
         m_entity = entity;
         m_node = new WiredNode( this );
@@ -211,16 +210,7 @@ public class WiredModemPeripheral extends ModemPeripheral implements IWiredEleme
     @Override
     public Map<String, IPeripheral> getPeripherals()
     {
-        IPeripheral peripheral = m_entity.getConnectedPeripheral();
-        if( peripheral != null )
-        {
-            String name = m_entity.getConnectedPeripheralName();
-            return Collections.singletonMap( name, peripheral );
-        }
-        else
-        {
-            return Collections.emptyMap();
-        }
+        return m_entity.getPeripherals();
     }
 
     @Override
@@ -230,12 +220,11 @@ public class WiredModemPeripheral extends ModemPeripheral implements IWiredEleme
         {
             detachPeripheral( name );
         }
-
-        String currentName = m_entity.getConnectedPeripheralName();
+        
         for( Map.Entry<String, IPeripheral> peripheral : change.peripheralsAdded().entrySet() )
         {
             // Skip any peripherals owned by me.
-            if( peripheral.getKey().equals( currentName ) ) continue;
+            if( m_entity.exclude( peripheral.getKey() ) ) continue;
 
             m_peripheralsByName.put( peripheral.getKey(), peripheral.getValue() );
             if( m_entity.isAttached() )

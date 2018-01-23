@@ -58,6 +58,7 @@ import net.minecraft.entity.player.InventoryPlayer;
 import net.minecraft.init.Items;
 import net.minecraft.inventory.Container;
 import net.minecraft.item.Item;
+import net.minecraft.item.ItemBlock;
 import net.minecraft.item.ItemRecord;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.crafting.IRecipe;
@@ -270,6 +271,10 @@ public abstract class ComputerCraftProxyCommon implements IComputerCraftProxy
         // Command Computer
         ComputerCraft.Blocks.advancedModem = new BlockAdvancedModem();
         registry.register( ComputerCraft.Blocks.advancedModem.setRegistryName( new ResourceLocation( ComputerCraft.MOD_ID, "advanced_modem" ) ) );
+
+        // Full block modem
+        ComputerCraft.Blocks.wiredModemFull = new BlockWiredModemFull();
+        registry.register( ComputerCraft.Blocks.wiredModemFull.setRegistryName( new ResourceLocation( ComputerCraft.MOD_ID, "wired_modem_full" ) ) );
     }
 
     @SubscribeEvent
@@ -289,9 +294,12 @@ public abstract class ComputerCraftProxyCommon implements IComputerCraftProxy
         // Command Computer
         registry.register( new ItemCommandComputer( ComputerCraft.Blocks.commandComputer ).setRegistryName( new ResourceLocation( ComputerCraft.MOD_ID, "command_computer" ) ) );
 
-        // Command Computer
+        // Advanced modem
         registry.register( new ItemAdvancedModem( ComputerCraft.Blocks.advancedModem ).setRegistryName( new ResourceLocation( ComputerCraft.MOD_ID, "advanced_modem" ) ) );
-
+        
+        // Full block modem
+        registry.register( new ItemWiredModemFull( ComputerCraft.Blocks.wiredModemFull ).setRegistryName( new ResourceLocation( ComputerCraft.MOD_ID, "wired_modem_full" ) ) );
+        
         // Items
         // Floppy Disk
         ComputerCraft.Items.disk = new ItemDiskLegacy();
@@ -467,6 +475,7 @@ public abstract class ComputerCraftProxyCommon implements IComputerCraftProxy
         GameRegistry.registerTileEntity( TileCommandComputer.class, ComputerCraft.LOWER_ID + " : " + "command_computer" );
         GameRegistry.registerTileEntity( TileAdvancedModem.class, ComputerCraft.LOWER_ID + " : " + "advanced_modem" );
         GameRegistry.registerTileEntity( TileSpeaker.class, ComputerCraft.LOWER_ID + " : " + "speaker" );
+        GameRegistry.registerTileEntity( TileWiredModemFull.class, ComputerCraft.LOWER_ID + " : " + "wired_modem_full" );
 
         // Register peripheral providers
         ComputerCraftAPI.registerPeripheralProvider( new DefaultPeripheralProvider() );

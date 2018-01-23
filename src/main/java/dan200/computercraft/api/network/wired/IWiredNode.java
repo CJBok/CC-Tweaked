@@ -70,5 +70,8 @@ public interface IWiredNode extends IPacketNetwork
      *
      * @see IWiredElement#getPeripherals()
      */
-    void invalidate();
+    default void invalidate()
+    {
+        getNetwork().invalidate( this );
+    }
 }
