@@ -201,7 +201,7 @@ public final class WiredNetwork implements IWiredNetwork
             if( neighbours.size() == 1 )
             {
                 // Broadcast our simple peripheral changes
-                splitSingleNetwork( wired, wiredNetwork );
+                removeSingleNode( wired, wiredNetwork );
                 return true;
             }
 
@@ -211,7 +211,7 @@ public final class WiredNetwork implements IWiredNetwork
             if( reachable.size() == nodes.size() )
             {
                 // Broadcast our simple peripheral changes
-                splitSingleNetwork( wired, wiredNetwork );
+                removeSingleNode( wired, wiredNetwork );
                 return true;
             }
 
@@ -230,8 +230,14 @@ public final class WiredNetwork implements IWiredNetwork
             }
 
             for( WiredNetwork network : maximals ) network.lock.writeLock().lock();
+
             try
             {
+                // We special case the original node: detaching all peripherals when needed. 
+                wired.network = wiredNetwork;
+                for( IPeripheral peripheral : wired.peripherals.values() ) peripheral.detach( wired );
+                wired.peripherals.clear();
+
                 // Ensure every network is finalised
                 for( WiredNetwork network : maximals )
                 {
@@ -282,18 +288,12 @@ public final class WiredNetwork implements IWiredNetwork
             wired.peripherals = newPeripherals;
 
             // Detach the old peripherals then remove them.
-            for( IPeripheral peripheral : change.peripheralsRemoved().values() )
-            {
-                peripheral.detach( node );
-            }
+            for( IPeripheral peripheral : change.peripheralsRemoved().values() ) peripheral.detach( wired );
             peripherals.keySet().removeAll( change.peripheralsRemoved().keySet() );
 
             // Add the new peripherals and attach them
             peripherals.putAll( change.peripheralsAdded() );
-            for( IPeripheral peripheral : change.peripheralsAdded().values() )
-            {
-                peripheral.attach( node );
-            }
+            for( IPeripheral peripheral : change.peripheralsAdded().values() ) peripheral.attach( wired );
 
             change.broadcast( nodes );
         }
@@ -373,16 +373,26 @@ public final class WiredNetwork implements IWiredNetwork
         }
     }
 
-    private void splitSingleNetwork( WiredNode wired, WiredNetwork wiredNetwork )
+    private void removeSingleNode( WiredNode wired, WiredNetwork wiredNetwork )
     {
         wiredNetwork.lock.writeLock().lock();
         try
         {
+            // Cache all the old nodes.
+            Map<String, IPeripheral> wiredPeripherals = new HashMap<>( wired.peripherals );
+
+            // Setup the new node's network
+            // Detach the old peripherals then remove them from the old network
             wired.network = wiredNetwork;
-            wiredNetwork.peripherals.putAll( wired.peripherals );
-            peripherals.keySet().removeAll( wired.peripherals.keySet() );
-            if( peripherals.size() != 0 ) NetworkChange.removed( peripherals ).broadcast( wired );
-            if( wired.peripherals.size() != 0 ) NetworkChange.removed( wired.peripherals ).broadcast( nodes );
+            for( IPeripheral peripheral : wired.peripherals.values() ) peripheral.detach( wired );
+            wired.peripherals.clear();
+            // Broadcast the change
+            if( !peripherals.isEmpty() ) NetworkChange.removed( peripherals ).broadcast( wired );
+
+            // Now remove all peripherals from this network and broadcast the change.
+            peripherals.keySet().removeAll( wiredPeripherals.keySet() );
+            if( !wiredPeripherals.isEmpty() ) NetworkChange.removed( wiredPeripherals ).broadcast( nodes );
+
         }
         finally
         {

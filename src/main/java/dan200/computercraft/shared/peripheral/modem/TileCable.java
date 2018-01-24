@@ -68,15 +68,38 @@ public class TileCable extends TileWiredBase implements IWiredElementTile
         m_destroyed = false;
     }
 
+    private void remove()
+    {
+        if( world == null || !world.isRemote )
+        {
+            getNode().remove();
+            m_connectionsFormed = false;
+        }
+    }
+
     @Override
     public void destroy()
     {
         if( !m_destroyed )
         {
             m_destroyed = true;
-            getNode().remove();
+            remove();
         }
         super.destroy();
+    }
+
+    @Override
+    public void onChunkUnload()
+    {
+        super.onChunkUnload();
+        remove();
+    }
+
+    @Override
+    public void invalidate()
+    {
+        super.invalidate();
+        remove();
     }
 
     @Override

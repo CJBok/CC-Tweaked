@@ -185,7 +185,7 @@ public class NetworkTest
         assertEquals( "B's network should be B", Sets.newHashSet( bN ), nodes( bN.getNetwork() ) );
 
         assertEquals( "A's peripheral set should be A, C", Sets.newHashSet( "a", "c" ), aE.allPeripherals().keySet() );
-        assertEquals( "B's peripheral set should be B", Sets.newHashSet( "b" ), bE.allPeripherals().keySet() );
+        assertEquals( "B's peripheral set should be empty", Sets.newHashSet(), bE.allPeripherals().keySet() );
         assertEquals( "C's peripheral set should be A, C", Sets.newHashSet( "a", "c" ), cE.allPeripherals().keySet() );
     }
 
@@ -224,7 +224,7 @@ public class NetworkTest
 
         assertEquals( "A's peripheral set should be A and A_", Sets.newHashSet( "a", "a_" ), aE.allPeripherals().keySet() );
         assertEquals( "B's peripheral set should be B and B_", Sets.newHashSet( "b", "b_" ), bE.allPeripherals().keySet() );
-        assertEquals( "C's peripheral set should be C", Sets.newHashSet( "c" ), cE.allPeripherals().keySet() );
+        assertEquals( "C's peripheral set should be empty", Sets.newHashSet(), cE.allPeripherals().keySet() );
     }
 
     @Test

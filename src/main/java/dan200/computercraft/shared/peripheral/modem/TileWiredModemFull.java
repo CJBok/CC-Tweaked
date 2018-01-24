@@ -39,15 +39,38 @@ public class TileWiredModemFull extends TileWiredBase implements IWiredElementTi
         Arrays.fill( m_attachedPeripheralIDs, -1 );
     }
 
+    private void remove()
+    {
+        if( world == null || !world.isRemote )
+        {
+            getNode().remove();
+            m_connectionsFormed = false;
+        }
+    }
+
     @Override
     public void destroy()
     {
         if( !m_destroyed )
         {
             m_destroyed = true;
-            getNode().remove();
+            remove();
         }
         super.destroy();
+    }
+
+    @Override
+    public void onChunkUnload()
+    {
+        super.onChunkUnload();
+        remove();
+    }
+
+    @Override
+    public void invalidate()
+    {
+        super.invalidate();
+        remove();
     }
 
     @Override

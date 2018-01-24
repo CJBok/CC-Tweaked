@@ -69,7 +69,7 @@ public class WirelessNetwork implements IPacketNetwork
     public synchronized void transmitInterdimensional( @Nonnull Packet packet )
     {
         Preconditions.checkNotNull( packet, "packet cannot be null" );
-        for (IPacketReceiver device : m_receivers)
+        for( IPacketReceiver device : m_receivers )
         {
             tryTransmit( device, packet, 0, true );
         }
