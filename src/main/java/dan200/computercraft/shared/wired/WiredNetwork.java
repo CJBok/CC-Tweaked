@@ -1,5 +1,6 @@
 package dan200.computercraft.shared.wired;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
 import dan200.computercraft.api.network.Packet;
 import dan200.computercraft.api.network.wired.IWiredNetwork;
@@ -9,6 +10,7 @@ import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.util.*;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -300,6 +302,36 @@ public final class WiredNetwork implements IWiredNetwork
         finally
         {
             lock.writeLock().unlock();
+        }
+    }
+
+    @Nonnull
+    @Override
+    public Map<String, IPeripheral> getPeripherals()
+    {
+        lock.readLock().lock();
+        try
+        {
+            return ImmutableMap.copyOf( peripherals );
+        }
+        finally
+        {
+            lock.readLock().unlock();
+        }
+    }
+
+    @Nullable
+    @Override
+    public IPeripheral getPeripheral( String peripheral )
+    {
+        lock.readLock().lock();
+        try
+        {
+            return peripherals.get( peripheral );
+        }
+        finally
+        {
+            lock.readLock().unlock();
         }
     }
 
