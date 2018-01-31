@@ -238,7 +238,7 @@ public final class WiredNetwork implements IWiredNetwork
                 // We special case the original node: detaching all peripherals when needed. 
                 wired.network = wiredNetwork;
                 for( IPeripheral peripheral : wired.peripherals.values() ) peripheral.detach( wired );
-                wired.peripherals.clear();
+                wired.peripherals = Collections.emptyMap();
 
                 // Ensure every network is finalised
                 for( WiredNetwork network : maximals )
@@ -417,7 +417,7 @@ public final class WiredNetwork implements IWiredNetwork
             // Detach the old peripherals then remove them from the old network
             wired.network = wiredNetwork;
             for( IPeripheral peripheral : wired.peripherals.values() ) peripheral.detach( wired );
-            wired.peripherals.clear();
+            wired.peripherals = Collections.emptyMap();
             // Broadcast the change
             if( !peripherals.isEmpty() ) NetworkChange.removed( peripherals ).broadcast( wired );
 

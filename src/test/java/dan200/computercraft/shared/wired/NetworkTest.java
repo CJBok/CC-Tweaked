@@ -19,6 +19,7 @@ import org.junit.Test;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.BiConsumer;
@@ -361,7 +362,7 @@ public class NetworkTest
         @Override
         public Map<String, IPeripheral> getPeripherals()
         {
-            return localPeripherals;
+            return Collections.unmodifiableMap( localPeripherals );
         }
 
         public NetworkElement addPeripheral( String name )
