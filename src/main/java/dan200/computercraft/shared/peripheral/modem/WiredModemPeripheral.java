@@ -216,20 +216,23 @@ public class WiredModemPeripheral extends ModemPeripheral implements IWiredEleme
     @Override
     public void networkChanged( @Nonnull INetworkChange change )
     {
-        for( String name : change.peripheralsRemoved().keySet() )
+        synchronized( m_peripheralsByName )
         {
-            detachPeripheral( name );
-        }
-        
-        for( Map.Entry<String, IPeripheral> peripheral : change.peripheralsAdded().entrySet() )
-        {
-            // Skip any peripherals owned by me.
-            if( m_entity.exclude( peripheral.getKey() ) ) continue;
-
-            m_peripheralsByName.put( peripheral.getKey(), peripheral.getValue() );
-            if( m_entity.isAttached() )
+            for( String name : change.peripheralsRemoved().keySet() )
             {
-                attachPeripheral( peripheral.getKey(), peripheral.getValue() );
+                detachPeripheral( name );
+            }
+
+            for( Map.Entry<String, IPeripheral> peripheral : change.peripheralsAdded().entrySet() )
+            {
+                // Skip any peripherals owned by me.
+                if( m_entity.exclude( peripheral.getKey() ) ) continue;
+
+                m_peripheralsByName.put( peripheral.getKey(), peripheral.getValue() );
+                if( m_entity.isAttached() )
+                {
+                    attachPeripheral( peripheral.getKey(), peripheral.getValue() );
+                }
             }
         }
     }
