@@ -31,10 +31,11 @@ public class TileWiredModemFull extends TileWiredBase implements IWiredElementTi
 {
     private boolean m_peripheralAccessAllowed = false;
     private int[] m_attachedPeripheralIDs = new int[6];
+    private String[] m_attachedPeripheralTypes = new String[6];
     private boolean m_destroyed = false;
     private boolean m_connectionsFormed = false;
-    
-    public TileWiredModemFull( )
+
+    public TileWiredModemFull()
     {
         Arrays.fill( m_attachedPeripheralIDs, -1 );
     }
@@ -89,8 +90,6 @@ public class TileWiredModemFull extends TileWiredBase implements IWiredElementTi
     {
         if( !world.isRemote && m_peripheralAccessAllowed )
         {
-            // Fetch the old set of IDs and the current peripheral
-            int[] ids = Arrays.copyOf( m_attachedPeripheralIDs, m_attachedPeripheralIDs.length );
             Map<String, IPeripheral> updated = getPeripherals();
 
             if( updated.isEmpty() )
@@ -100,11 +99,9 @@ public class TileWiredModemFull extends TileWiredBase implements IWiredElementTi
                 updateAnim();
             }
 
-            if( updated.isEmpty() || !Arrays.equals( ids, m_attachedPeripheralIDs ) )
-            {
-                // If there are no peripherals or the IDs have changed then update the node. 
-                getNode().invalidate();
-            }
+            // Always invalidate the node: it's more accurate than checking if the peripherals
+            // have changed
+            getNode().invalidate();
         }
     }
 
@@ -160,15 +157,17 @@ public class TileWiredModemFull extends TileWiredBase implements IWiredElementTi
     @Override
     public void readFromNBT( NBTTagCompound tag )
     {
-        // Read properties
         super.readFromNBT( tag );
         m_peripheralAccessAllowed = tag.getBoolean( "peripheralAccess" );
         for( int i = 0; i < m_attachedPeripheralIDs.length; i++ )
         {
-            String key = "peripheralID_" + i;
-            if( tag.hasKey( key, Constants.NBT.TAG_ANY_NUMERIC ) )
+            if( tag.hasKey( "peripheralID_" + i, Constants.NBT.TAG_ANY_NUMERIC ) )
             {
-                m_attachedPeripheralIDs[i] = tag.getInteger( key );
+                m_attachedPeripheralIDs[i] = tag.getInteger( "peripheralID_" + i );
+            }
+            if( tag.hasKey( "peripheralType_" + i, Constants.NBT.TAG_STRING ) )
+            {
+                m_attachedPeripheralTypes[i] = tag.getString( "peripheralType_" + i );
             }
         }
     }
@@ -177,12 +176,18 @@ public class TileWiredModemFull extends TileWiredBase implements IWiredElementTi
     @Override
     public NBTTagCompound writeToNBT( NBTTagCompound tag )
     {
-        // Write properties
         tag = super.writeToNBT( tag );
         tag.setBoolean( "peripheralAccess", m_peripheralAccessAllowed );
         for( int i = 0; i < m_attachedPeripheralIDs.length; i++ )
         {
-            tag.setInteger( "peripheralID_" + i, m_attachedPeripheralIDs[i] );
+            if( m_attachedPeripheralIDs[i] >= 0 )
+            {
+                tag.setInteger( "peripheralID_" + i, m_attachedPeripheralIDs[i] );
+            }
+            if( m_attachedPeripheralTypes[i] != null )
+            {
+                tag.setString( "peripheralType_" + i, m_attachedPeripheralTypes[i] );
+            }
         }
         return tag;
     }
@@ -216,7 +221,7 @@ public class TileWiredModemFull extends TileWiredBase implements IWiredElementTi
         }
     }
 
-    public void networkChanged()
+    private void networkChanged()
     {
         if( getWorld().isRemote ) return;
 
@@ -235,7 +240,7 @@ public class TileWiredModemFull extends TileWiredBase implements IWiredElementTi
     }
 
     // private stuff
-    public void togglePeripheralAccess()
+    private void togglePeripheralAccess()
     {
         if( !m_peripheralAccessAllowed )
         {
@@ -270,8 +275,10 @@ public class TileWiredModemFull extends TileWiredBase implements IWiredElementTi
             {
                 String type = peripheral.getType();
                 int id = m_attachedPeripheralIDs[facing.ordinal()];
-                if( id < 0 )
+                String oldType = m_attachedPeripheralTypes[facing.ordinal()];
+                if( id < 0 || !type.equals( oldType ) )
                 {
+                    m_attachedPeripheralTypes[facing.ordinal()] = type;
                     id = m_attachedPeripheralIDs[facing.ordinal()] = IDAssigner.getNextIDFromFile( new File(
                         ComputerCraft.getWorldDir( getWorld() ),
                         "computer/lastid_" + type + ".txt"
