@@ -7,6 +7,7 @@ import dan200.computercraft.api.network.Packet;
 import dan200.computercraft.api.network.wired.IWiredElement;
 import dan200.computercraft.api.network.wired.IWiredNetwork;
 import dan200.computercraft.api.network.wired.IWiredNode;
+import dan200.computercraft.api.network.wired.IWiredSender;
 import dan200.computercraft.api.peripheral.IPeripheral;
 
 import javax.annotation.Nonnull;
@@ -80,7 +81,10 @@ public final class WiredNode implements IWiredNode
     public void transmitSameDimension( @Nonnull Packet packet, double range )
     {
         Preconditions.checkNotNull( packet, "packet cannot be null" );
-        if( packet.getSender() != element ) throw new IllegalArgumentException( "Sender is not in the network" );
+        if( !(packet.getSender() instanceof IWiredSender) || ((IWiredSender) packet.getSender()).getNode() != this )
+        {
+            throw new IllegalArgumentException( "Sender is not in the network" );
+        }
 
         acquireReadLock();
         try
@@ -97,7 +101,10 @@ public final class WiredNode implements IWiredNode
     public void transmitInterdimensional( @Nonnull Packet packet )
     {
         Preconditions.checkNotNull( packet, "packet cannot be null" );
-        if( packet.getSender() != element ) throw new IllegalArgumentException( "Sender is not in the network" );
+        if( !(packet.getSender() instanceof IWiredSender) || ((IWiredSender) packet.getSender()).getNode() != this )
+        {
+            throw new IllegalArgumentException( "Sender is not in the network" );
+        }
 
         acquireReadLock();
         try

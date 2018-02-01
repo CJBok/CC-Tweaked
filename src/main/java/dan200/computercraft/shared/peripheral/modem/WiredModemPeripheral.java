@@ -5,14 +5,10 @@ import dan200.computercraft.api.filesystem.IWritableMount;
 import dan200.computercraft.api.lua.ILuaContext;
 import dan200.computercraft.api.lua.LuaException;
 import dan200.computercraft.api.network.IPacketNetwork;
-import dan200.computercraft.api.network.wired.INetworkChange;
-import dan200.computercraft.api.network.wired.IWiredElement;
 import dan200.computercraft.api.network.wired.IWiredNode;
+import dan200.computercraft.api.network.wired.IWiredSender;
 import dan200.computercraft.api.peripheral.IComputerAccess;
 import dan200.computercraft.api.peripheral.IPeripheral;
-import dan200.computercraft.shared.wired.WiredNode;
-import net.minecraft.util.EnumFacing;
-import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
 
@@ -22,18 +18,15 @@ import java.util.Map;
 
 import static dan200.computercraft.core.apis.ArgumentHelper.getString;
 
-public class WiredModemPeripheral extends ModemPeripheral implements IWiredElement
+public class WiredModemPeripheral extends ModemPeripheral implements IWiredSender
 {
-    private final TileWiredBase m_entity;
-    private final IWiredNode m_node;
+    private final WiredModemElement modem;
 
-    private final Map<String, IPeripheral> m_peripheralsByName = new HashMap<>();
-    private final Map<String, RemotePeripheralWrapper> m_peripheralWrappersByName = new HashMap<>();
+    private final Map<String, RemotePeripheralWrapper> peripheralWrappers = new HashMap<>();
 
-    public WiredModemPeripheral( TileWiredBase entity )
+    public WiredModemPeripheral( WiredModemElement modem )
     {
-        m_entity = entity;
-        m_node = new WiredNode( this );
+        this.modem = modem;
     }
 
     //region IPacketSender implementation
@@ -52,23 +45,21 @@ public class WiredModemPeripheral extends ModemPeripheral implements IWiredEleme
     @Override
     protected IPacketNetwork getNetwork()
     {
-        return m_node;
+        return modem.getNode();
     }
 
     @Nonnull
     @Override
     public World getWorld()
     {
-        return m_entity.getWorld();
+        return modem.getWorld();
     }
 
     @Nonnull
     @Override
     public Vec3d getPosition()
     {
-        EnumFacing direction = m_entity.getCachedDirection();
-        BlockPos pos = m_entity.getPos().offset( direction );
-        return new Vec3d( pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5 );
+        return modem.getPosition();
     }
     //endregion
 
@@ -97,11 +88,11 @@ public class WiredModemPeripheral extends ModemPeripheral implements IWiredEleme
             case 0:
             {
                 // getNamesRemote
-                synchronized( m_peripheralsByName )
+                synchronized( peripheralWrappers )
                 {
                     int idx = 1;
                     Map<Object, Object> table = new HashMap<>();
-                    for( String name : m_peripheralWrappersByName.keySet() )
+                    for( String name : peripheralWrappers.keySet() )
                     {
                         table.put( idx++, name );
                     }
@@ -160,14 +151,13 @@ public class WiredModemPeripheral extends ModemPeripheral implements IWiredEleme
     public void attach( @Nonnull IComputerAccess computer )
     {
         super.attach( computer );
-        synchronized( m_peripheralsByName )
+        synchronized( modem.getRemotePeripherals() )
         {
-            for( String periphName : m_peripheralsByName.keySet() )
+            synchronized( peripheralWrappers )
             {
-                IPeripheral peripheral = m_peripheralsByName.get( periphName );
-                if( peripheral != null )
+                for( Map.Entry<String, IPeripheral> entry : modem.getRemotePeripherals().entrySet() )
                 {
-                    attachPeripheral( periphName, peripheral );
+                    attachPeripheralImpl( entry.getKey(), entry.getValue() );
                 }
             }
         }
@@ -176,12 +166,13 @@ public class WiredModemPeripheral extends ModemPeripheral implements IWiredEleme
     @Override
     public synchronized void detach( @Nonnull IComputerAccess computer )
     {
-        synchronized( m_peripheralsByName )
+        synchronized( peripheralWrappers )
         {
-            for( String periphName : m_peripheralsByName.keySet() )
+            for( RemotePeripheralWrapper wrapper : peripheralWrappers.values() )
             {
-                detachPeripheral( periphName );
+                wrapper.detach();
             }
+            peripheralWrappers.clear();
         }
         super.detach( computer );
     }
@@ -192,77 +183,57 @@ public class WiredModemPeripheral extends ModemPeripheral implements IWiredEleme
         if( other instanceof WiredModemPeripheral )
         {
             WiredModemPeripheral otherModem = (WiredModemPeripheral) other;
-            return otherModem.m_entity == m_entity;
+            return otherModem.modem == modem;
         }
         return false;
     }
     //endregion
 
-    //region IWiredNode
     @Nonnull
     @Override
     public IWiredNode getNode()
     {
-        return m_node;
+        return modem.getNode();
     }
 
-    @Nonnull
-    @Override
-    public Map<String, IPeripheral> getPeripherals()
+    public void attachPeripheral( String name, IPeripheral peripheral )
     {
-        return m_entity.getPeripherals();
-    }
+        if( getComputer() == null ) return;
 
-    @Override
-    public void networkChanged( @Nonnull INetworkChange change )
-    {
-        synchronized( m_peripheralsByName )
+        synchronized( peripheralWrappers )
         {
-            for( String name : change.peripheralsRemoved().keySet() )
-            {
-                detachPeripheral( name );
-            }
+            attachPeripheralImpl( name, peripheral );
+        }
+    }
 
-            for( Map.Entry<String, IPeripheral> peripheral : change.peripheralsAdded().entrySet() )
+    public void detachPeripheral( String name )
+    {
+        synchronized( peripheralWrappers )
+        {
+            RemotePeripheralWrapper wrapper = peripheralWrappers.get( name );
+            if( wrapper != null )
             {
-                // Skip any peripherals owned by me.
-                if( m_entity.exclude( peripheral.getKey() ) ) continue;
-
-                m_peripheralsByName.put( peripheral.getKey(), peripheral.getValue() );
-                if( m_entity.isAttached() )
-                {
-                    attachPeripheral( peripheral.getKey(), peripheral.getValue() );
-                }
+                peripheralWrappers.remove( name );
+                wrapper.detach();
             }
         }
     }
-    //endregion
 
-    private void attachPeripheral( String periphName, IPeripheral peripheral )
+    private void attachPeripheralImpl( String periphName, IPeripheral peripheral )
     {
-        if( !m_peripheralWrappersByName.containsKey( periphName ) )
+        if( !peripheralWrappers.containsKey( periphName ) )
         {
             RemotePeripheralWrapper wrapper = new RemotePeripheralWrapper( peripheral, getComputer(), periphName );
-            m_peripheralWrappersByName.put( periphName, wrapper );
+            peripheralWrappers.put( periphName, wrapper );
             wrapper.attach();
-        }
-    }
-
-    private void detachPeripheral( String periphName )
-    {
-        if( m_peripheralWrappersByName.containsKey( periphName ) )
-        {
-            RemotePeripheralWrapper wrapper = m_peripheralWrappersByName.get( periphName );
-            m_peripheralWrappersByName.remove( periphName );
-            wrapper.detach();
         }
     }
 
     private String getTypeRemote( String remoteName )
     {
-        synchronized( m_peripheralsByName )
+        synchronized( peripheralWrappers )
         {
-            RemotePeripheralWrapper wrapper = m_peripheralWrappersByName.get( remoteName );
+            RemotePeripheralWrapper wrapper = peripheralWrappers.get( remoteName );
             if( wrapper != null )
             {
                 return wrapper.getType();
@@ -273,9 +244,9 @@ public class WiredModemPeripheral extends ModemPeripheral implements IWiredEleme
 
     private String[] getMethodNamesRemote( String remoteName )
     {
-        synchronized( m_peripheralsByName )
+        synchronized( peripheralWrappers )
         {
-            RemotePeripheralWrapper wrapper = m_peripheralWrappersByName.get( remoteName );
+            RemotePeripheralWrapper wrapper = peripheralWrappers.get( remoteName );
             if( wrapper != null )
             {
                 return wrapper.getMethodNames();
@@ -287,9 +258,9 @@ public class WiredModemPeripheral extends ModemPeripheral implements IWiredEleme
     private Object[] callMethodRemote( String remoteName, ILuaContext context, String method, Object[] arguments ) throws LuaException, InterruptedException
     {
         RemotePeripheralWrapper wrapper;
-        synchronized( m_peripheralsByName )
+        synchronized( peripheralWrappers )
         {
-            wrapper = m_peripheralWrappersByName.get( remoteName );
+            wrapper = peripheralWrappers.get( remoteName );
         }
         if( wrapper != null )
         {

@@ -9,8 +9,10 @@ package dan200.computercraft.shared.peripheral.modem;
 import com.google.common.base.Objects;
 import dan200.computercraft.ComputerCraft;
 import dan200.computercraft.api.network.wired.IWiredElement;
+import dan200.computercraft.api.network.wired.IWiredNode;
 import dan200.computercraft.api.peripheral.IPeripheral;
 import dan200.computercraft.shared.peripheral.common.BlockCable;
+import dan200.computercraft.shared.peripheral.common.TilePeripheralBase;
 import dan200.computercraft.shared.util.IDAssigner;
 import dan200.computercraft.shared.wired.IWiredElementTile;
 import net.minecraft.entity.player.EntityPlayer;
@@ -18,6 +20,7 @@ import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.text.TextComponentTranslation;
 import net.minecraft.world.World;
 import net.minecraftforge.common.util.Constants;
@@ -26,13 +29,74 @@ import javax.annotation.Nonnull;
 import java.io.File;
 import java.util.*;
 
-public class TileWiredModemFull extends TileWiredBase implements IWiredElementTile
+public class TileWiredModemFull extends TilePeripheralBase implements IWiredElementTile
 {
+    private static class FullElement extends WiredModemElement
+    {
+        private final TileWiredModemFull m_entity;
+
+        private FullElement( TileWiredModemFull m_entity )
+        {
+            this.m_entity = m_entity;
+        }
+
+        @Override
+        protected void attachPeripheral( String name, IPeripheral peripheral )
+        {
+            for( int i = 0; i < 6; i++ )
+            {
+                WiredModemPeripheral modem = m_entity.m_modems[i];
+                if( modem != null && !name.equals( m_entity.getCachedPeripheralName( EnumFacing.VALUES[i] ) ) )
+                {
+                    modem.attachPeripheral( name, peripheral );
+                }
+            }
+        }
+
+        @Override
+        protected void detachPeripheral( String name )
+        {
+            for( int i = 0; i < 6; i++ )
+            {
+                WiredModemPeripheral modem = m_entity.m_modems[i];
+                if( modem != null ) modem.detachPeripheral( name );
+            }
+        }
+
+        @Nonnull
+        @Override
+        public World getWorld()
+        {
+            return m_entity.getWorld();
+        }
+
+        @Nonnull
+        @Override
+        public Vec3d getPosition()
+        {
+            BlockPos pos = m_entity.getPos();
+            return new Vec3d( pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5 );
+        }
+
+        @Nonnull
+        @Override
+        public Map<String, IPeripheral> getPeripherals()
+        {
+            return m_entity.getPeripherals();
+        }
+    }
+
+    private WiredModemPeripheral[] m_modems = new WiredModemPeripheral[6];
+
     private boolean m_peripheralAccessAllowed = false;
     private int[] m_attachedPeripheralIDs = new int[6];
     private String[] m_attachedPeripheralTypes = new String[6];
+
     private boolean m_destroyed = false;
     private boolean m_connectionsFormed = false;
+
+    private final WiredModemElement m_element = new FullElement( this );
+    private final IWiredNode node = m_element.getNode();
 
     public TileWiredModemFull()
     {
@@ -43,7 +107,7 @@ public class TileWiredModemFull extends TileWiredBase implements IWiredElementTi
     {
         if( world == null || !world.isRemote )
         {
-            getNode().remove();
+            node.remove();
             m_connectionsFormed = false;
         }
     }
@@ -100,7 +164,7 @@ public class TileWiredModemFull extends TileWiredBase implements IWiredElementTi
 
             // Always invalidate the node: it's more accurate than checking if the peripherals
             // have changed
-            getNode().invalidate();
+            node.invalidate();
         }
     }
 
@@ -191,14 +255,18 @@ public class TileWiredModemFull extends TileWiredBase implements IWiredElementTi
         return tag;
     }
 
-    @Override
     protected void updateAnim()
     {
         int anim = 0;
-        if( m_modem.isActive() )
+        for( WiredModemPeripheral modem : m_modems )
         {
-            anim += 1;
+            if( modem != null && modem.isActive() )
+            {
+                anim += 1;
+                break;
+            }
         }
+
         if( m_peripheralAccessAllowed )
         {
             anim += 2;
@@ -207,17 +275,32 @@ public class TileWiredModemFull extends TileWiredBase implements IWiredElementTi
     }
 
     @Override
+    public final void readDescription( @Nonnull NBTTagCompound tag )
+    {
+        super.readDescription( tag );
+        updateBlock();
+    }
+
+    @Override
     public void update()
     {
-        super.update();
         if( !getWorld().isRemote )
         {
+            boolean changed = false;
+            for( WiredModemPeripheral peripheral : m_modems )
+            {
+                if( peripheral != null && peripheral.pollChanged() ) changed = true;
+            }
+            if( changed ) updateAnim();
+
             if( !m_connectionsFormed )
             {
                 networkChanged();
                 m_connectionsFormed = true;
             }
         }
+
+        super.update();
     }
 
     private void networkChanged()
@@ -232,10 +315,10 @@ public class TileWiredModemFull extends TileWiredBase implements IWiredElementTi
             if( element == null ) continue;
 
             // If we can connect to it then do so
-            getNode().connectTo( element.getNode() );
+            node.connectTo( element.getNode() );
         }
 
-        getNode().invalidate();
+        node.invalidate();
     }
 
     // private stuff
@@ -256,12 +339,11 @@ public class TileWiredModemFull extends TileWiredBase implements IWiredElementTi
         }
 
         updateAnim();
-        getNode().invalidate();
+        node.invalidate();
     }
 
-    @Override
     @Nonnull
-    public Map<String, IPeripheral> getPeripherals()
+    private Map<String, IPeripheral> getPeripherals()
     {
         if( !m_peripheralAccessAllowed ) return Collections.emptyMap();
 
@@ -291,10 +373,13 @@ public class TileWiredModemFull extends TileWiredBase implements IWiredElementTi
         return peripherals;
     }
 
-    @Override
-    public boolean canRenderBreaking()
+    private String getCachedPeripheralName( EnumFacing facing )
     {
-        return true;
+        if( !m_peripheralAccessAllowed ) return null;
+
+        int id = m_attachedPeripheralIDs[facing.ordinal()];
+        String type = m_attachedPeripheralTypes[facing.ordinal()];
+        return id < 0 || type == null ? null : type + "_" + id;
     }
 
     // IWiredElement tile
@@ -302,7 +387,7 @@ public class TileWiredModemFull extends TileWiredBase implements IWiredElementTi
     @Override
     public IWiredElement getWiredElement( EnumFacing side )
     {
-        return getModem();
+        return m_element;
     }
 
     // IPeripheralTile
@@ -310,6 +395,8 @@ public class TileWiredModemFull extends TileWiredBase implements IWiredElementTi
     @Override
     public IPeripheral getPeripheral( EnumFacing side )
     {
-        return m_modem;
+        WiredModemPeripheral peripheral = m_modems[side.ordinal()];
+        if( peripheral == null ) peripheral = m_modems[side.ordinal()] = new WiredModemPeripheral( m_element );
+        return peripheral;
     }
 }

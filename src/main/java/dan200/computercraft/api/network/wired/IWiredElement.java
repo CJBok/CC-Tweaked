@@ -1,6 +1,5 @@
 package dan200.computercraft.api.network.wired;
 
-import dan200.computercraft.api.network.IPacketSender;
 import dan200.computercraft.api.peripheral.IPeripheral;
 
 import javax.annotation.Nonnull;
@@ -10,19 +9,8 @@ import java.util.Map;
 /**
  * Represents an element in a wired network.
  */
-public interface IWiredElement extends IPacketSender
+public interface IWiredElement extends IWiredSender
 {
-    /**
-     * The node in the network representing this object.
-     *
-     * This should be used as a proxy for the main network. One should register
-     * your packet receivers, invalidate peripherals, etc... through this object.
-     *
-     * @return The node for this element.
-     */
-    @Nonnull
-    IWiredNode getNode();
-
     /**
      * The peripherals this network element provides.
      *

@@ -9,6 +9,7 @@ package dan200.computercraft.shared.peripheral.modem;
 import com.google.common.base.Objects;
 import dan200.computercraft.ComputerCraft;
 import dan200.computercraft.api.network.wired.IWiredElement;
+import dan200.computercraft.api.network.wired.IWiredNode;
 import dan200.computercraft.api.peripheral.IPeripheral;
 import dan200.computercraft.shared.common.BlockGeneric;
 import dan200.computercraft.shared.peripheral.PeripheralType;
@@ -27,6 +28,7 @@ import net.minecraft.util.EnumFacing;
 import net.minecraft.util.NonNullList;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.text.TextComponentTranslation;
 import net.minecraft.world.World;
 
@@ -36,7 +38,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-public class TileCable extends TileWiredBase implements IWiredElementTile
+public class TileCable extends TileModemBase implements IWiredElementTile
 {
     public static final double MIN = 0.375;
     public static final double MAX = 1 - MIN;
@@ -51,6 +53,57 @@ public class TileCable extends TileWiredBase implements IWiredElementTile
         new AxisAlignedBB( MAX, MIN, MIN, 1, MAX, MAX ),   // East
     };
 
+    private static class CableElement extends WiredModemElement
+    {
+        private final TileCable m_entity;
+
+        private CableElement( TileCable m_entity )
+        {
+            this.m_entity = m_entity;
+        }
+
+        @Nonnull
+        @Override
+        public World getWorld()
+        {
+            return m_entity.getWorld();
+        }
+
+        @Nonnull
+        @Override
+        public Vec3d getPosition()
+        {
+            EnumFacing direction = m_entity.getCachedDirection();
+            BlockPos pos = m_entity.getPos().offset( direction );
+            return new Vec3d( (double) pos.getX() + 0.5, (double) pos.getY() + 0.5, (double) pos.getZ() + 0.5 );
+        }
+
+        @Nonnull
+        @Override
+        public Map<String, IPeripheral> getPeripherals()
+        {
+            IPeripheral peripheral = m_entity.getConnectedPeripheral();
+            return peripheral != null
+                ? Collections.singletonMap( m_entity.getConnectedPeripheralName(), peripheral )
+                : Collections.emptyMap();
+        }
+
+        @Override
+        protected void attachPeripheral( String name, IPeripheral peripheral )
+        {
+            if( !name.equals( m_entity.getConnectedPeripheralName() ) )
+            {
+                ((WiredModemPeripheral) m_entity.m_modem).attachPeripheral( name, peripheral );
+            }
+        }
+
+        @Override
+        protected void detachPeripheral( String name )
+        {
+            ((WiredModemPeripheral) m_entity.m_modem).detachPeripheral( name );
+        }
+    }
+
     // Members
 
     private boolean m_peripheralAccessAllowed;
@@ -61,6 +114,9 @@ public class TileCable extends TileWiredBase implements IWiredElementTile
     private boolean m_hasDirection = false;
     private boolean m_connectionsFormed = false;
 
+    private WiredModemElement m_cable;
+    private IWiredNode m_node;
+
     public TileCable()
     {
         m_peripheralAccessAllowed = false;
@@ -69,11 +125,19 @@ public class TileCable extends TileWiredBase implements IWiredElementTile
         m_destroyed = false;
     }
 
+    @Override
+    protected ModemPeripheral createPeripheral()
+    {
+        m_cable = new CableElement( this );
+        m_node = m_cable.getNode();
+        return new WiredModemPeripheral( m_cable );
+    }
+
     private void remove()
     {
         if( world == null || !world.isRemote )
         {
-            getNode().remove();
+            m_node.remove();
             m_connectionsFormed = false;
         }
     }
@@ -373,22 +437,6 @@ public class TileCable extends TileWiredBase implements IWiredElementTile
         return nbttagcompound;
     }
 
-    @Nonnull
-    @Override
-    public Map<String, IPeripheral> getPeripherals()
-    {
-        IPeripheral peripheral = getConnectedPeripheral();
-        return peripheral != null
-            ? Collections.singletonMap( getConnectedPeripheralName(), peripheral )
-            : Collections.emptyMap();
-    }
-
-    @Override
-    public boolean exclude( String name )
-    {
-        return name.equals( getConnectedPeripheralName() );
-    }
-
     @Override
     protected void updateAnim()
     {
@@ -414,7 +462,7 @@ public class TileCable extends TileWiredBase implements IWiredElementTile
             if( !m_connectionsFormed )
             {
                 networkChanged();
-                if( m_peripheralAccessAllowed ) getNode().invalidate();
+                if( m_peripheralAccessAllowed ) m_node.invalidate();
                 m_connectionsFormed = true;
             }
         }
@@ -424,7 +472,7 @@ public class TileCable extends TileWiredBase implements IWiredElementTile
     {
         if( getWorld().isRemote ) return;
 
-        if( modemChanged() ) getNode().invalidate();
+        if( modemChanged() ) m_node.invalidate();
 
         IBlockState state = getBlockState();
         World world = getWorld();
@@ -437,12 +485,12 @@ public class TileCable extends TileWiredBase implements IWiredElementTile
             if( BlockCable.canConnectIn( state, facing ) )
             {
                 // If we can connect to it then do so
-                getNode().connectTo( element.getNode() );
+                m_node.connectTo( element.getNode() );
             }
-            else if( getNode().getNetwork() == element.getNode().getNetwork() )
+            else if( m_node.getNetwork() == element.getNode().getNetwork() )
             {
                 // Otherwise if we're on the same network then attempt to void it.
-                getNode().disconnectFrom( element.getNode() );
+                m_node.disconnectFrom( element.getNode() );
             }
         }
     }
@@ -488,7 +536,7 @@ public class TileCable extends TileWiredBase implements IWiredElementTile
         }
 
         updateAnim();
-        getNode().invalidate();
+        m_node.invalidate();
     }
 
     private String getConnectedPeripheralName()
@@ -543,7 +591,7 @@ public class TileCable extends TileWiredBase implements IWiredElementTile
     @Override
     public IWiredElement getWiredElement( EnumFacing side )
     {
-        return BlockCable.canConnectIn( getBlockState(), side ) ? getModem() : null;
+        return BlockCable.canConnectIn( getBlockState(), side ) ? m_cable : null;
     }
 
     // IPeripheralTile
