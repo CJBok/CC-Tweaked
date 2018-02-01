@@ -237,7 +237,6 @@ public final class WiredNetwork implements IWiredNetwork
             {
                 // We special case the original node: detaching all peripherals when needed. 
                 wired.network = wiredNetwork;
-                for( IPeripheral peripheral : wired.peripherals.values() ) peripheral.detach( wired );
                 wired.peripherals = Collections.emptyMap();
 
                 // Ensure every network is finalised
@@ -290,48 +289,16 @@ public final class WiredNetwork implements IWiredNetwork
             wired.peripherals = newPeripherals;
 
             // Detach the old peripherals then remove them.
-            for( IPeripheral peripheral : change.peripheralsRemoved().values() ) peripheral.detach( wired );
             peripherals.keySet().removeAll( change.peripheralsRemoved().keySet() );
 
             // Add the new peripherals and attach them
             peripherals.putAll( change.peripheralsAdded() );
-            for( IPeripheral peripheral : change.peripheralsAdded().values() ) peripheral.attach( wired );
 
             change.broadcast( nodes );
         }
         finally
         {
             lock.writeLock().unlock();
-        }
-    }
-
-    @Nonnull
-    @Override
-    public Map<String, IPeripheral> getPeripherals()
-    {
-        lock.readLock().lock();
-        try
-        {
-            return ImmutableMap.copyOf( peripherals );
-        }
-        finally
-        {
-            lock.readLock().unlock();
-        }
-    }
-
-    @Nullable
-    @Override
-    public IPeripheral getPeripheral( String peripheral )
-    {
-        lock.readLock().lock();
-        try
-        {
-            return peripherals.get( peripheral );
-        }
-        finally
-        {
-            lock.readLock().unlock();
         }
     }
 
@@ -416,7 +383,6 @@ public final class WiredNetwork implements IWiredNetwork
             // Setup the new node's network
             // Detach the old peripherals then remove them from the old network
             wired.network = wiredNetwork;
-            for( IPeripheral peripheral : wired.peripherals.values() ) peripheral.detach( wired );
             wired.peripherals = Collections.emptyMap();
             // Broadcast the change
             if( !peripherals.isEmpty() ) NetworkChange.removed( peripherals ).broadcast( wired );

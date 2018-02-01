@@ -13,6 +13,8 @@ import net.minecraft.world.World;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import java.util.Collections;
+import java.util.Map;
 
 /**
  * The interface passed to peripherals by computers or turtles, providing methods
@@ -154,4 +156,16 @@ public interface IComputerAccess
      */
     @Nonnull
     String getAttachmentName();
+
+    @Nonnull
+    default Map<String, IPeripheral> getAvailablePeripherals()
+    {
+        return Collections.emptyMap();
+    }
+
+    @Nullable
+    default IPeripheral getAvailablePeripheral( @Nonnull String name )
+    {
+        return null;
+    }
 }

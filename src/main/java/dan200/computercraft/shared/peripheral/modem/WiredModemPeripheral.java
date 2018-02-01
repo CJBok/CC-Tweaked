@@ -1,5 +1,6 @@
 package dan200.computercraft.shared.peripheral.modem;
 
+import com.google.common.collect.ImmutableMap;
 import dan200.computercraft.api.filesystem.IMount;
 import dan200.computercraft.api.filesystem.IWritableMount;
 import dan200.computercraft.api.lua.ILuaContext;
@@ -13,6 +14,7 @@ import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -223,7 +225,7 @@ public class WiredModemPeripheral extends ModemPeripheral implements IWiredSende
     {
         if( !peripheralWrappers.containsKey( periphName ) )
         {
-            RemotePeripheralWrapper wrapper = new RemotePeripheralWrapper( peripheral, getComputer(), periphName );
+            RemotePeripheralWrapper wrapper = new RemotePeripheralWrapper( modem, peripheral, getComputer(), periphName );
             peripheralWrappers.put( periphName, wrapper );
             wrapper.attach();
         }
@@ -271,16 +273,18 @@ public class WiredModemPeripheral extends ModemPeripheral implements IWiredSende
 
     private static class RemotePeripheralWrapper implements IComputerAccess
     {
-        private IPeripheral m_peripheral;
-        private IComputerAccess m_computer;
-        private String m_name;
+        private final WiredModemElement m_element;
+        private final IPeripheral m_peripheral;
+        private final IComputerAccess m_computer;
+        private final String m_name;
 
-        private String m_type;
-        private String[] m_methods;
-        private Map<String, Integer> m_methodMap;
+        private final String m_type;
+        private final String[] m_methods;
+        private final Map<String, Integer> m_methodMap;
 
-        public RemotePeripheralWrapper( IPeripheral peripheral, IComputerAccess computer, String name )
+        public RemotePeripheralWrapper( WiredModemElement element, IPeripheral peripheral, IComputerAccess computer, String name )
         {
+            m_element = element;
             m_peripheral = peripheral;
             m_computer = computer;
             m_name = name;
@@ -381,6 +385,26 @@ public class WiredModemPeripheral extends ModemPeripheral implements IWiredSende
         public String getAttachmentName()
         {
             return m_name;
+        }
+
+        @Nonnull
+        @Override
+        public Map<String, IPeripheral> getAvailablePeripherals()
+        {
+            synchronized( m_element.getRemotePeripherals() )
+            {
+                return ImmutableMap.copyOf( m_element.getRemotePeripherals() );
+            }
+        }
+
+        @Nullable
+        @Override
+        public IPeripheral getAvailablePeripheral( @Nonnull String name )
+        {
+            synchronized( m_element.getRemotePeripherals() )
+            {
+                return m_element.getRemotePeripherals().get( name );
+            }
         }
     }
 }

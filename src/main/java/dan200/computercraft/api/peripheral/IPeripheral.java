@@ -115,14 +115,6 @@ public interface IPeripheral
     {
     }
 
-    default void attach( @Nonnull IWiredNode node )
-    {
-    }
-
-    default void detach( @Nonnull IWiredNode node )
-    {
-    }
-
     @Nonnull
     default Object getTarget()
     {
