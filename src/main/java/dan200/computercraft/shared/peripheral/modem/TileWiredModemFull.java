@@ -12,7 +12,6 @@ import dan200.computercraft.api.network.wired.IWiredElement;
 import dan200.computercraft.api.peripheral.IPeripheral;
 import dan200.computercraft.shared.peripheral.common.BlockCable;
 import dan200.computercraft.shared.util.IDAssigner;
-import dan200.computercraft.shared.util.PeripheralUtil;
 import dan200.computercraft.shared.wired.IWiredElementTile;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.nbt.NBTTagCompound;
@@ -270,7 +269,7 @@ public class TileWiredModemFull extends TileWiredBase implements IWiredElementTi
         for( EnumFacing facing : EnumFacing.VALUES )
         {
             BlockPos neighbour = getPos().offset( facing );
-            IPeripheral peripheral = PeripheralUtil.getPeripheral( getWorld(), neighbour, facing.getOpposite() );
+            IPeripheral peripheral = TileCable.getPeripheral( getWorld(), neighbour, facing.getOpposite() );
             if( peripheral != null && !(peripheral instanceof WiredModemPeripheral) )
             {
                 String type = peripheral.getType();

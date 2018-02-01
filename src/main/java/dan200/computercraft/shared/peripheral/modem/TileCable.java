@@ -18,6 +18,7 @@ import dan200.computercraft.shared.peripheral.common.PeripheralItemFactory;
 import dan200.computercraft.shared.util.IDAssigner;
 import dan200.computercraft.shared.util.PeripheralUtil;
 import dan200.computercraft.shared.wired.IWiredElementTile;
+import net.minecraft.block.Block;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemStack;
@@ -516,11 +517,19 @@ public class TileCable extends TileWiredBase implements IWiredElementTile
             {
                 EnumFacing facing = getDirection();
                 BlockPos neighbour = getPos().offset( facing );
-                IPeripheral peripheral = PeripheralUtil.getPeripheral( getWorld(), neighbour, facing.getOpposite() );
+                IPeripheral peripheral = getPeripheral( getWorld(), neighbour, facing.getOpposite() );
                 return peripheral == null || peripheral instanceof WiredModemPeripheral ? null : peripheral;
             }
         }
         return null;
+    }
+
+    public static IPeripheral getPeripheral( World world, BlockPos pos, EnumFacing facing )
+    {
+        Block block = world.getBlockState( pos ).getBlock();
+        if( block == ComputerCraft.Blocks.wiredModemFull || block == ComputerCraft.Blocks.cable ) return null;
+
+        return PeripheralUtil.getPeripheral( world, pos, facing );
     }
 
     @Override

@@ -161,6 +161,17 @@ public class NetworkTest
     }
 
     @Test
+    public void testRemoveSingle()
+    {
+        NetworkElement aE = new NetworkElement( null, null, "a" );
+        IWiredNode aN = aE.getNode();
+
+        IWiredNetwork network = aN.getNetwork();
+        assertFalse( "Cannot remove node from an empty network", aN.remove() );
+        assertEquals( "Networks are same before and after", network, aN.getNetwork() );
+    }
+
+    @Test
     public void testRemoveLeaf()
     {
         NetworkElement
