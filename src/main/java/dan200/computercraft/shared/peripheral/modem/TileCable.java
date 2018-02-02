@@ -73,8 +73,7 @@ public class TileCable extends TileModemBase implements IWiredElementTile
         @Override
         public Vec3d getPosition()
         {
-            EnumFacing direction = m_entity.getCachedDirection();
-            BlockPos pos = m_entity.getPos().offset( direction );
+            BlockPos pos = m_entity.getPos();
             return new Vec3d( (double) pos.getX() + 0.5, (double) pos.getY() + 0.5, (double) pos.getZ() + 0.5 );
         }
 
@@ -130,7 +129,16 @@ public class TileCable extends TileModemBase implements IWiredElementTile
     {
         m_cable = new CableElement( this );
         m_node = m_cable.getNode();
-        return new WiredModemPeripheral( m_cable );
+        return new WiredModemPeripheral( m_cable )
+        {
+            @Nonnull
+            @Override
+            public Vec3d getPosition()
+            {
+                BlockPos pos = getPos().offset( getCachedDirection() );
+                return new Vec3d( pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5 );
+            }
+        };
     }
 
     private void remove()

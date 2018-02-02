@@ -396,7 +396,19 @@ public class TileWiredModemFull extends TilePeripheralBase implements IWiredElem
     public IPeripheral getPeripheral( EnumFacing side )
     {
         WiredModemPeripheral peripheral = m_modems[side.ordinal()];
-        if( peripheral == null ) peripheral = m_modems[side.ordinal()] = new WiredModemPeripheral( m_element );
+        if( peripheral == null )
+        {
+            peripheral = m_modems[side.ordinal()] = new WiredModemPeripheral( m_element )
+            {
+                @Nonnull
+                @Override
+                public Vec3d getPosition()
+                {
+                    BlockPos pos = getPos().offset( side );
+                    return new Vec3d( pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5 );
+                }
+            };
+        }
         return peripheral;
     }
 }

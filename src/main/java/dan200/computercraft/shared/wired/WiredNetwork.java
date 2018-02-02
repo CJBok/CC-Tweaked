@@ -1,6 +1,5 @@
 package dan200.computercraft.shared.wired;
 
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
 import dan200.computercraft.api.network.Packet;
 import dan200.computercraft.api.network.wired.IWiredNetwork;
@@ -10,7 +9,6 @@ import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
 
 import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 import java.util.*;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -308,7 +306,9 @@ public final class WiredNetwork implements IWiredNetwork
         TreeSet<TransmitPoint> transmitTo = new TreeSet<>();
 
         {
-            TransmitPoint startEntry = new TransmitPoint( start, 0, false );
+            TransmitPoint startEntry = start.element.getWorld() != packet.getSender().getWorld()
+                ? new TransmitPoint( start, Double.POSITIVE_INFINITY, true )
+                : new TransmitPoint( start, start.element.getPosition().distanceTo( packet.getSender().getPosition() ), false );
             points.put( start, startEntry );
             transmitTo.add( startEntry );
         }
@@ -414,7 +414,10 @@ public final class WiredNetwork implements IWiredNetwork
         @Override
         public int compareTo( @Nonnull TransmitPoint o )
         {
-            return Double.compare( distance, o.distance );
+            // Objects with the same distance are not the same object, so we must add an additional layer of ordering.
+            return distance == o.distance
+                ? Integer.compare( node.hashCode(), o.node.hashCode() )
+                : Double.compare( distance, o.distance );
         }
     }
 

@@ -57,8 +57,7 @@ public final class WiredNode implements IWiredNode
                 double receiveRange = Math.max( range, receiver.getRange() ); // Ensure range is symmetrical
                 if( interdimensional || receiver.isInterdimensional() || packetDistance < receiveRange )
                 {
-                    // TODO: Add changed distance from this node?
-                    receiver.receiveSameDimension( packet, packetDistance );
+                    receiver.receiveSameDimension( packet, packetDistance + element.getPosition().distanceTo( receiver.getPosition() ) );
                 }
             }
             else
