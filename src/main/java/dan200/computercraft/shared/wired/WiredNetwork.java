@@ -16,7 +16,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 public final class WiredNetwork implements IWiredNetwork
 {
     final ReadWriteLock lock = new ReentrantReadWriteLock();
-    private HashSet<WiredNode> nodes;
+    HashSet<WiredNode> nodes;
     private HashMap<String, IPeripheral> peripherals = new HashMap<>();
 
     public WiredNetwork( WiredNode node )
@@ -88,9 +88,19 @@ public final class WiredNetwork implements IWiredNetwork
             if( wiredU.neighbours.add( wiredV ) )
             {
                 wiredV.neighbours.add( wiredU );
+
+                InvariantChecker.checkNetwork( this );
+                InvariantChecker.checkNode( wiredU );
+                InvariantChecker.checkNode( wiredV );
                 return true;
             }
-            return false;
+            else
+            {
+                InvariantChecker.checkNetwork( this );
+                InvariantChecker.checkNode( wiredU );
+                InvariantChecker.checkNode( wiredV );
+                return false;
+            }
         }
         finally
         {
@@ -101,6 +111,7 @@ public final class WiredNetwork implements IWiredNetwork
     @Override
     public boolean disconnect( @Nonnull IWiredNode nodeU, @Nonnull IWiredNode nodeV )
     {
+        // ComputerCraft.log.info( "Disconnecting " + nodeU + " / " + nodeV );
         WiredNode wiredU = checkNode( nodeU );
         WiredNode wiredV = checkNode( nodeV );
         if( nodeU == nodeV ) throw new IllegalArgumentException( "Cannot remove a connection to oneself." );
@@ -162,6 +173,11 @@ public final class WiredNetwork implements IWiredNetwork
                     NetworkChange.removed( networkU.peripherals ).broadcast( nodes );
                 }
 
+                InvariantChecker.checkNetwork( this );
+                InvariantChecker.checkNetwork( networkU );
+                InvariantChecker.checkNode( wiredU );
+                InvariantChecker.checkNode( wiredV );
+
                 return true;
             }
             finally
@@ -202,6 +218,8 @@ public final class WiredNetwork implements IWiredNetwork
             {
                 // Broadcast our simple peripheral changes
                 removeSingleNode( wired, wiredNetwork );
+                InvariantChecker.checkNode( wired );
+                InvariantChecker.checkNetwork( wiredNetwork );
                 return true;
             }
 
@@ -212,6 +230,8 @@ public final class WiredNetwork implements IWiredNetwork
             {
                 // Broadcast our simple peripheral changes
                 removeSingleNode( wired, wiredNetwork );
+                InvariantChecker.checkNode( wired );
+                InvariantChecker.checkNetwork( wiredNetwork );
                 return true;
             }
 
@@ -246,6 +266,9 @@ public final class WiredNetwork implements IWiredNetwork
                         network.peripherals.putAll( child.peripherals );
                     }
                 }
+
+                for( WiredNetwork network : maximals ) InvariantChecker.checkNetwork( network );
+                InvariantChecker.checkNode( wired );
 
                 // Then broadcast network changes once all nodes are finalised
                 for( WiredNetwork network : maximals )
@@ -359,19 +382,6 @@ public final class WiredNetwork implements IWiredNetwork
         }
     }
 
-    public Set<WiredNode> getNodes()
-    {
-        lock.readLock().lock();
-        try
-        {
-            return Sets.newHashSet( nodes );
-        }
-        finally
-        {
-            lock.readLock().unlock();
-        }
-    }
-
     private void removeSingleNode( WiredNode wired, WiredNetwork wiredNetwork )
     {
         wiredNetwork.lock.writeLock().lock();
@@ -383,7 +393,9 @@ public final class WiredNetwork implements IWiredNetwork
             // Setup the new node's network
             // Detach the old peripherals then remove them from the old network
             wired.network = wiredNetwork;
+            wired.neighbours.clear();
             wired.peripherals = Collections.emptyMap();
+
             // Broadcast the change
             if( !peripherals.isEmpty() ) NetworkChange.removed( peripherals ).broadcast( wired );
 

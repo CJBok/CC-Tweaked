@@ -1,7 +1,6 @@
 package dan200.computercraft.shared.wired;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.Sets;
 import dan200.computercraft.api.network.IPacketReceiver;
 import dan200.computercraft.api.network.Packet;
 import dan200.computercraft.api.network.wired.IWiredElement;
@@ -128,19 +127,6 @@ public final class WiredNode implements IWiredNode
     public IWiredNetwork getNetwork()
     {
         return network;
-    }
-
-    public Set<WiredNode> getNeighbours()
-    {
-        acquireReadLock();
-        try
-        {
-            return Sets.newHashSet( neighbours );
-        }
-        finally
-        {
-            network.lock.readLock().unlock();
-        }
     }
 
     @Override

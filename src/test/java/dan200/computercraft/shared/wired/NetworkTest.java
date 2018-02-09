@@ -2,6 +2,7 @@ package dan200.computercraft.shared.wired;
 
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import dan200.computercraft.ComputerCraft;
 import dan200.computercraft.api.lua.ILuaContext;
 import dan200.computercraft.api.lua.LuaException;
 import dan200.computercraft.api.network.wired.INetworkChange;
@@ -14,6 +15,8 @@ import net.minecraft.util.EnumFacing;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
+import org.apache.logging.log4j.LogManager;
+import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -30,6 +33,12 @@ import static org.junit.Assert.*;
 
 public class NetworkTest
 {
+    @Before
+    public void setup()
+    {
+        ComputerCraft.log = LogManager.getLogger();
+    }
+
     @Test
     public void testConnect()
     {
@@ -486,11 +495,11 @@ public class NetworkTest
 
     private static Set<WiredNode> nodes( IWiredNetwork network )
     {
-        return ((WiredNetwork) network).getNodes();
+        return ((WiredNetwork) network).nodes;
     }
 
     private static Set<WiredNode> neighbours( IWiredNode node )
     {
-        return ((WiredNode) node).getNeighbours();
+        return ((WiredNode) node).neighbours;
     }
 }
