@@ -487,6 +487,8 @@ public class TileCable extends TileModemBase implements IWiredElementTile
         BlockPos current = getPos();
         for( EnumFacing facing : EnumFacing.VALUES )
         {
+            if( !world.isBlockLoaded( pos ) ) continue;
+            
             IWiredElement element = ComputerCraft.getWiredElementAt( world, current.offset( facing ), facing.getOpposite() );
             if( element == null ) continue;
 
