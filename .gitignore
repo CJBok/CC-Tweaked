@@ -7,6 +7,11 @@ deploy
 *.iml
 .idea
 .gradle
+.settings
 luaj-2.0.3/lib
 luaj-2.0.3/*.jar
 *.DS_Store
+/bin/
+.classpath
+.project
+*.launch
