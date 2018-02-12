@@ -40,6 +40,8 @@ public class EnergyUtils {
 			{
 				methods.add("getEnergyStored");
 				methods.add("getMaxEnergyStored");
+				methods.add("getEnergyStoredPercentage");
+				methods.add("getEnergyPerTick");
 			}
 			
 			if ( RedstoneFluxCC.isEnergyProvider(tile) )
@@ -60,6 +62,12 @@ public class EnergyUtils {
 			
 			if ( !methods.contains("getMaxEnergyStored") ) 
 				methods.add("getMaxEnergyStored");
+			
+			if ( !methods.contains("getEnergyStoredPercentage") ) 
+				methods.add("getEnergyStoredPercentage");
+			
+			if ( !methods.contains("getEnergyPerTick") ) 
+				methods.add("getEnergyPerTick");
 			
 			if ( !methods.contains("getMaxEnergyExtract") ) 
 				methods.add("getMaxEnergyExtract");

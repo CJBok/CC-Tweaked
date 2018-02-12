@@ -26,7 +26,7 @@ group = "org.squiddev"
 archivesBaseName = "cc-tweaked"
 
 minecraft {
-    version = "1.12-14.21.1.2387"
+    version = "1.12-14.21.1.2443"
     runDir = "run"
     replace '${version}', project.version
 
@@ -52,6 +52,10 @@ repositories {
         name = "CoFH Maven"
         url = "http://maven.covers1624.net"
     }
+    maven {
+        name 'CB Maven'
+        url "http://chickenbones.net/maven/"
+    }
 }
 
 configurations {
@@ -61,9 +65,11 @@ configurations {
 
 dependencies {
     deobfProvided "mezz.jei:jei_1.12:4.7.5.86:api"
-    compile "cofh:RedstoneFlux:1.12-2.0.0.1:deobf"
-    runtime "mezz.jei:jei_1.12:4.7.5.86"
+    compile "cofh:RedstoneFlux:1.12-2.0.1.2:deobf"
     shade 'org.squiddev:Cobalt:0.3.1'
+    
+    runtime "mezz.jei:jei_1.12:4.7.5.86"
+    runtime "cofh:ThermalExpansion:1.12-5.3.3+:deobf"
 }
 
 javadoc {
