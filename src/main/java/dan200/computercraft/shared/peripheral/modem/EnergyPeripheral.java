@@ -14,6 +14,8 @@ public class EnergyPeripheral implements IPeripheral
 	private final TileEntity tile;
 	private final EnumFacing side;
 	
+	private String[] methods;
+	
 	public EnergyPeripheral(TileEntity tile, EnumFacing side)
 	{
 		this.tile = tile;
@@ -37,29 +39,43 @@ public class EnergyPeripheral implements IPeripheral
 	@Override
 	public String[] getMethodNames()
 	{
-		return EnergyUtils.getPossibleMethods(tile, side.getOpposite());
+		this.methods = EnergyUtils.getPossibleMethods(tile, side.getOpposite());
+		
+		return this.methods;
 	}
 
 	@Override
 	public Object[] callMethod(IComputerAccess computer, ILuaContext context, int method, Object[] arguments) throws LuaException, InterruptedException
 	{
-		switch( method )
+		switch( this.methods[method] )
         {
-            case 0:
+            case "getEnergyStored":
             {
-            	return new Object[] {EnergyUtils.getEnergyStored(tile, side.getOpposite())};
+            	synchronized( this )
+                {
+            		return new Object[] {EnergyUtils.getEnergyStored(tile, side.getOpposite())};
+                }
             }
-            case 1:
+            case "getMaxEnergyStored":
             {
-            	return new Object[] {EnergyUtils.getMaxEnergyStored(tile, side.getOpposite())};
+            	synchronized( this )
+                {
+            		return new Object[] {EnergyUtils.getMaxEnergyStored(tile, side.getOpposite())};
+                }
             }
-            case 2:
+            case "getMaxEnergyExtract":
             {
-            	return new Object[] {EnergyUtils.getMaxEnergyExtract(tile, side.getOpposite())};
+            	synchronized( this )
+                {
+            		return new Object[] {EnergyUtils.getMaxEnergyExtract(tile, side.getOpposite())};
+                }
             }
-            case 3:
+            case "getMaxEnergyReceive":
             {
-            	return new Object[] {EnergyUtils.getMaxEnergyReceive(tile, side.getOpposite())};
+            	synchronized( this )
+                {
+            		return new Object[] {EnergyUtils.getMaxEnergyReceive(tile, side.getOpposite())};
+                }
             }
         }
 		
