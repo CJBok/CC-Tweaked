@@ -51,24 +51,20 @@ public class EnergyPeripheral implements IPeripheral
 	@Override
 	public Object[] callMethod(IComputerAccess computer, ILuaContext context, int method, Object[] arguments) throws LuaException, InterruptedException
 	{
-		Object[] returnValues = new Object[] {};
-		
 		switch( this.methods[method] )
         {
             case "getEnergyStored":
             {
             	synchronized( this )
                 {
-            		returnValues =  new Object[] {EnergyUtils.getEnergyStored(tile, side.getOpposite())};
-            		break;
+            		return new Object[] {EnergyUtils.getEnergyStored(tile, side.getOpposite())};
                 }
             }
             case "getMaxEnergyStored":
             {
             	synchronized( this )
                 {
-            		returnValues =  new Object[] {EnergyUtils.getMaxEnergyStored(tile, side.getOpposite())};
-            		break;
+            		return new Object[] {EnergyUtils.getMaxEnergyStored(tile, side.getOpposite())};
                 }
             }
             case "getEnergyStoredPercentage":
@@ -80,45 +76,48 @@ public class EnergyPeripheral implements IPeripheral
             		if  ( max <= 0 ) {
             			return new Object[] {"NaN"};
             		}
-            		returnValues =  new Object[] {stored / max * 100};
-            		break;
+            		return new Object[] {stored / max * 100};
                 }
             }
             case "getEnergyPerTick":
             {
             	synchronized( this )
                 {
-            		final int tickCount = FMLClientHandler.instance().getClient().player.ticksExisted - this.previousTickCount;
-            		final int energyDiff = EnergyUtils.getEnergyStored(tile, side.getOpposite()) - this.previousEnergyStored;
-            		if  ( tickCount == 0 ) {
+            		final int currentTickCount = FMLClientHandler.instance().getClient().player.ticksExisted;
+            		final int currentEnergyStored = EnergyUtils.getEnergyStored(tile, side.getOpposite());
+            		
+            		final int ticksPassed = currentTickCount - this.previousTickCount;
+            		final int energyDiff = currentEnergyStored - this.previousEnergyStored;
+            		
+            		if  ( ticksPassed == 0 ) {
             			return new Object[] {"NaN"};
             		}
-            		returnValues =  new Object[] {Math.floor(energyDiff / tickCount)};
-            		break;
+            		
+            		if ( this.previousTickCount != currentTickCount ) {
+            			this.previousTickCount = currentTickCount;
+                		this.previousEnergyStored = currentEnergyStored;
+            		}
+            		
+            		return new Object[] {Math.floor(energyDiff / ticksPassed)};
                 }
             }
             case "getMaxEnergyExtract":
             {
             	synchronized( this )
                 {
-            		returnValues =  new Object[] {EnergyUtils.getMaxEnergyExtract(tile, side.getOpposite())};
-            		break;
+            		return new Object[] {EnergyUtils.getMaxEnergyExtract(tile, side.getOpposite())};
                 }
             }
             case "getMaxEnergyReceive":
             {
             	synchronized( this )
                 {
-            		returnValues =  new Object[] {EnergyUtils.getMaxEnergyReceive(tile, side.getOpposite())};
-            		break;
+            		return new Object[] {EnergyUtils.getMaxEnergyReceive(tile, side.getOpposite())};
                 }
             }
         }
 
-		this.previousTickCount = FMLClientHandler.instance().getClient().player.ticksExisted;
-		this.previousEnergyStored = EnergyUtils.getEnergyStored(tile, side.getOpposite());
-
-		return returnValues;
+		return null;
 	}
 
 	@Override
