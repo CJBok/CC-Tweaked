@@ -72,6 +72,7 @@ import net.minecraftforge.common.config.ConfigCategory;
 import net.minecraftforge.common.config.Configuration;
 import net.minecraftforge.common.config.Property;
 import net.minecraftforge.fml.common.FMLCommonHandler;
+import net.minecraftforge.fml.common.Loader;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.SidedProxy;
 import net.minecraftforge.fml.common.event.*;
@@ -97,13 +98,17 @@ import java.util.zip.ZipFile;
 
 @Mod(
     modid = ComputerCraft.MOD_ID, name = "CC: Tweaked", version = "${version}",
-    guiFactory = "dan200.computercraft.client.gui.GuiConfigCC$Factory"
+    guiFactory = "dan200.computercraft.client.gui.GuiConfigCC$Factory",
+    dependencies = "after:redstoneflux"
 )
 public class ComputerCraft
 {
     public static final String MOD_ID = "computercraft";
     public static final String LOWER_ID = "computercraft";
-
+    
+    // Integration
+    public static boolean redstonefluxLoaded = false;
+    
     // GUI IDs
     public static final int diskDriveGUIID = 100;
     public static final int computerGUIID = 101;
@@ -381,6 +386,8 @@ public class ComputerCraft
 
         proxy.preInit();
         turtleProxy.preInit();
+        
+        redstonefluxLoaded = Loader.isModLoaded("redstoneflux");
     }
 
     public static void syncConfig() {
